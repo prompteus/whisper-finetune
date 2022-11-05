@@ -18,6 +18,7 @@ evaluate = ">=0.3.0"
 jiwer = "^2.5.1"
 gradio = "^3.9"
 torchaudio = "^0.13.0"
+wandb = "^0.13.5"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.17.0"
