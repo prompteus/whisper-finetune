@@ -4,3 +4,4 @@
 */wandb/
 /models/
 **/__pycache__/
+/.mypy_cache/
