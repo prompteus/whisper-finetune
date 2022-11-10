@@ -1,1 +1,2 @@
-# whisper-cs
+# Whisper finetune
+

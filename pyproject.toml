@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "whisper-cs"
+name = "whisper-finetune"
 version = "0.1.0"
-description = "Fintetuning speech-to-text model Whisper to czech language"
+description = "Fintetuning speech-to-text model Whisper"
 authors = ["Marek Kadlcik <10684818+markcheeky@users.noreply.github.com>"]
 license = "Topics"
 readme = "README.md"
-packages = [{include = "whisper_cs"}]
+packages = [{include = "whisper_finetune"}]
 
 
 [tool.poetry.dependencies]
@@ -26,6 +26,7 @@ ipykernel = "^6.17.0"
 ipywidgets = "^8.0.2"
 black = "^22.10.0"
 isort = "^5.10.1"
+mypy = "^0.990"
 
 [build-system]
 requires = ["poetry-core"]
