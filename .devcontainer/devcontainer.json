@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.241.1/containers/docker-existing-dockerfile
 {
-	"name": "VScode Dev Dockerfile - Whisper cs",
+	"name": "VScode Dev Dockerfile - Whisper finetune",
 	// Sets the run context to one level up instead of the .devcontainer folder.
 	"context": "..",
 	// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
@@ -16,7 +16,6 @@
 		"--gpus",
 		"device=0"
 	],
-	
 	// Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "user",
 	"customizations": {
