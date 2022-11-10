@@ -42,9 +42,7 @@ class RandomFunctional(RandomTransform):
         for key, sampling_fn in self.sample.items():
             sampled_kwargs[key] = sampling_fn(self.random_gen)
         print(self.transform.__name__, sampled_kwargs)
-        return self.transform(
-            audio, sample_rate, **sampled_kwargs, **self.kwargs, metadata=metadata
-        )
+        return self.transform(audio, sample_rate, **sampled_kwargs, **self.kwargs, metadata=metadata)
 
 
 class RandomOrderCompose(audaugs.composition.BaseComposition):
@@ -122,7 +120,7 @@ def my_augment_pipeline(
         RandomFunctional(
             transform=audaugsF.add_background_noise,
             sample=dict(
-                background_audio=lambda rng: str(rng.choice(paths_noise_environmental)),
+                background_audio=lambda rng: str(rng.choice(paths_noise_environmental)),  # type: ignore
                 snr_level_db=lambda rng: rng.triangular(2, 10, 20),
             ),
             p=prob,
@@ -130,7 +128,7 @@ def my_augment_pipeline(
         RandomFunctional(
             transform=audaugsF.add_background_noise,
             sample=dict(
-                background_audio=lambda rng: str(rng.choice(paths_noise_songs)),
+                background_audio=lambda rng: str(rng.choice(paths_noise_songs)),  # type: ignore
                 snr_level_db=lambda rng: rng.triangular(2, 10, 20),
             ),
             p=prob,
@@ -141,9 +139,7 @@ def my_augment_pipeline(
                 reverberance=lambda rng: rng.triangular(0, 0, 40),
                 hf_damping=lambda rng: rng.triangular(0, 0, 40),
                 room_scale=lambda rng: rng.triangular(0, 0, 30),
-                pre_delay=lambda rng: rng.triangular(
-                    0, 0, 400
-                ),  # 500ms is maximum allowed value
+                pre_delay=lambda rng: rng.triangular(0, 0, 400),  # 500ms is maximum allowed value
                 wet_gain=lambda rng: rng.triangular(0, 0, 6),
             ),
             p=prob,
@@ -153,7 +149,7 @@ def my_augment_pipeline(
                 RandomFunctional(
                     transform=audaugsF.harmonic,
                     sample=dict(
-                        kernel_size=lambda rng: rng.integers(5, 40).item(),
+                        kernel_size=lambda rng: int(rng.integers(5, 40)),
                         power=lambda rng: rng.triangular(0, 0, 1.8),
                         margin=lambda rng: rng.triangular(1, 1, 6),
                     ),
@@ -162,7 +158,7 @@ def my_augment_pipeline(
                 RandomFunctional(
                     transform=audaugsF.percussive,
                     sample=dict(
-                        kernel_size=lambda rng: rng.integers(5, 40).item(),
+                        kernel_size=lambda rng: int(rng.integers(5, 40)),
                         power=lambda rng: rng.triangular(0, 0, 3),
                         margin=lambda rng: rng.triangular(1, 1, 4),
                     ),

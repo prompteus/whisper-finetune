@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from typing import Any
+
 import evaluate
 from transformers import WhisperTokenizer
+from transformers.trainer import PredictionOutput
 
 
 class StringMetrics:
@@ -9,11 +12,11 @@ class StringMetrics:
         self,
         tokenizer: WhisperTokenizer,
         metrics: list[str] = ["wer", "cer"],
-    ):
+    ) -> None:
         self.tokenizer = tokenizer
-        self.metrics = {metric: evaluate.load(metric) for metric in metrics}
+        self.metrics = {name: evaluate.load(name) for name in metrics}
 
-    def compute_metrics(self, pred):
+    def compute_metrics(self, pred: PredictionOutput) -> dict[str, Any]:
         pred_ids = pred.predictions
         label_ids = pred.label_ids
 
@@ -24,7 +27,8 @@ class StringMetrics:
         pred_str = self.tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
         label_str = self.tokenizer.batch_decode(label_ids, skip_special_tokens=True)
 
-        return {
-            name: metric.compute(predictions=pred_str, references=label_str)
-            for name, metric in self.metrics.items()
-        }
+        metrics = {}
+        for name, metric in self.metrics.items():
+            metrics[name] = metric.compute(predictions=pred_str, references=label_str)
+
+        return metrics
