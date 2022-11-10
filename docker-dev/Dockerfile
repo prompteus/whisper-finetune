@@ -29,6 +29,6 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 USER $USERNAME
 
-RUN pip install -U pip setuptools wheel poetry
+RUN pip install -U pip setuptools wheel poetry poetry-types
 RUN python3 -m poetry config virtualenvs.in-project true
-
+RUN python3 -m poetry self add poetry-types
