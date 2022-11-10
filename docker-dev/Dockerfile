@@ -11,7 +11,9 @@ RUN apt-get update && apt-get install -y \
     git \
     wget \
     curl \
-    ffmpeg
+    ffmpeg \
+    zip \
+    unzip
 
 
 ARG USERNAME=user
@@ -28,3 +30,4 @@ USER $USERNAME
 
 RUN pip install -U pip setuptools wheel poetry
 RUN python3 -m poetry config virtualenvs.in-project true
+
