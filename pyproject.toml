@@ -27,6 +27,7 @@ ipywidgets = "^8.0.2"
 black = "^22.10.0"
 isort = "^5.10.1"
 mypy = "^0.990"
+flake8 = "^5.0.4"
 
 [build-system]
 requires = ["poetry-core"]
