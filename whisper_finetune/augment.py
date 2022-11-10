@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
@@ -41,21 +42,21 @@ class RandomFunctional(RandomTransform):
         sampled_kwargs = {}
         for key, sampling_fn in self.sample.items():
             sampled_kwargs[key] = sampling_fn(self.random_gen)
-        print(self.transform.__name__, sampled_kwargs)
+
         return self.transform(audio, sample_rate, **sampled_kwargs, **self.kwargs, metadata=metadata)
 
 
-class RandomOrderCompose(audaugs.composition.BaseComposition):
+class RandomCompose(audaugs.composition.BaseComposition):
     def __init__(
         self,
         transforms: list[RandomTransform],
+        apply_num_transforms: Callable[[np.random.Generator], int],
         p: float = 1.0,
         seed: int = 0,
-        max_transforms: int | None = None,
     ) -> None:
         super().__init__(transforms, p)
         self.order_rng = np.random.default_rng(seed)
-        self.max_transforms = max_transforms
+        self.apply_num_transforms = apply_num_transforms
 
     def __call__(
         self,
@@ -65,8 +66,8 @@ class RandomOrderCompose(audaugs.composition.BaseComposition):
     ) -> tuple[np.ndarray, int]:
         transforms = self.transforms.copy()
         self.order_rng.shuffle(transforms)
-        if self.max_transforms is not None:
-            transforms = transforms[: self.max_transforms]
+        max_transforms = self.apply_num_transforms(self.order_rng)
+        transforms = transforms[:max_transforms]
 
         for transform in transforms:
             audio, sample_rate = transform(audio, sample_rate, metadata)
@@ -76,10 +77,12 @@ class RandomOrderCompose(audaugs.composition.BaseComposition):
 def my_augment_pipeline(
     paths_noise_songs: list[Path],
     paths_noise_environmental: list[Path],
-    max_transforms: int | None = None,
+    apply_num_transforms: Callable[[np.random.Generator], int] | None = None,
     seed: int = 0,
-    prob: float = 0.35,
 ) -> audaugs.composition.BaseComposition:
+
+    if apply_num_transforms is None:
+        apply_num_transforms = lambda rng: rng.choice([1, 2, 3, 4, 5], p=[0.15, 0.25, 0.3, 0.2, 0.1])
 
     augmentations = [
         RandomFunctional(
@@ -87,35 +90,30 @@ def my_augment_pipeline(
             sample=dict(
                 volume_db=lambda rng: rng.uniform(-5, 10),
             ),
-            p=prob,
         ),
         RandomFunctional(
             transform=audaugsF.tempo,
             sample=dict(
                 factor=lambda rng: rng.uniform(0.8, 1.2),
             ),
-            p=prob,
         ),
         RandomFunctional(
             transform=audaugsF.speed,
             sample=dict(
                 factor=lambda rng: rng.uniform(0.9, 1.2),
             ),
-            p=prob,
         ),
         RandomFunctional(
             transform=audaugsF.pitch_shift,
             sample=dict(
                 n_steps=lambda rng: rng.uniform(-2, 6),
             ),
-            p=prob,
         ),
         RandomFunctional(
             transform=audaugsF.add_background_noise,
             sample=dict(
                 snr_level_db=lambda rng: rng.triangular(3, 30, 30),
             ),
-            p=prob,
         ),
         RandomFunctional(
             transform=audaugsF.add_background_noise,
@@ -123,7 +121,6 @@ def my_augment_pipeline(
                 background_audio=lambda rng: str(rng.choice(paths_noise_environmental)),  # type: ignore
                 snr_level_db=lambda rng: rng.triangular(2, 10, 20),
             ),
-            p=prob,
         ),
         RandomFunctional(
             transform=audaugsF.add_background_noise,
@@ -131,7 +128,6 @@ def my_augment_pipeline(
                 background_audio=lambda rng: str(rng.choice(paths_noise_songs)),  # type: ignore
                 snr_level_db=lambda rng: rng.triangular(2, 10, 20),
             ),
-            p=prob,
         ),
         RandomFunctional(
             transform=audaugsF.reverb,
@@ -142,7 +138,6 @@ def my_augment_pipeline(
                 pre_delay=lambda rng: rng.triangular(0, 0, 400),  # 500ms is maximum allowed value
                 wet_gain=lambda rng: rng.triangular(0, 0, 6),
             ),
-            p=prob,
         ),
         audaugs.OneOf(
             [
@@ -153,7 +148,6 @@ def my_augment_pipeline(
                         power=lambda rng: rng.triangular(0, 0, 1.8),
                         margin=lambda rng: rng.triangular(1, 1, 6),
                     ),
-                    p=prob,
                 ),
                 RandomFunctional(
                     transform=audaugsF.percussive,
@@ -162,14 +156,23 @@ def my_augment_pipeline(
                         power=lambda rng: rng.triangular(0, 0, 3),
                         margin=lambda rng: rng.triangular(1, 1, 4),
                     ),
-                    p=prob,
                 ),
             ]
         ),
     ]
 
-    return RandomOrderCompose(
+    return RandomCompose(
         transforms=augmentations,
-        max_transforms=max_transforms,
+        apply_num_transforms=apply_num_transforms,
         seed=seed,
     )
+
+
+@dataclass
+class MyAugment:
+    transform: audaugs.composition.BaseComposition
+
+    def __call__(self, batch: dict[str, Any]) -> dict[str, Any]:
+        for audio in batch["audio"]:
+            audio["array"], audio["sampling_rate"] = self.transform(audio["array"], audio["sampling_rate"])
+        return batch

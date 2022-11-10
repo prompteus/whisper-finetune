@@ -3,25 +3,52 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import datasets
+import numpy as np
 import torch
 from transformers import WhisperFeatureExtractor, WhisperTokenizer
 
 
+def skrink_splits(
+    ds: datasets.DatasetDict,
+    split_sizes: dict[str, int],
+    grow_split: str = "train",
+    seed: int = 0,
+) -> datasets.DatasetDict:
+    """
+    Shrink splits to a given size.
+    Moves the ommited examples to 'grow_split' split.
+    """
+
+    rng = np.random.default_rng(seed)
+    dataset = datasets.DatasetDict()
+    moved = []
+
+    for split, size in split_sizes.items():
+        if len(ds[split]) > size:
+            idx_remaining = rng.choice(len(ds[split]), size, replace=False)
+            idx_move = np.setdiff1d(np.arange(len(ds[split])), idx_remaining)
+            dataset[split] = ds[split].select(idx_remaining)
+            moved.append(ds[split].select(idx_move))
+
+    dataset[grow_split] = datasets.concatenate_datasets([ds[grow_split]] + moved)
+    return dataset
+
+
 @dataclass
-class BatchPreparation:
+class Preprocessor:
     tokenizer: WhisperTokenizer
     feature_extractor: WhisperFeatureExtractor
 
-    def preprocess(self, batch: dict[str, Any]) -> dict[str, torch.Tensor]:
-        # load and resample audio data from 48 to 16kHz
+    def __call__(self, batch: dict[str, Any]) -> dict[str, torch.Tensor]:
         audio = batch["audio"]
 
         # compute log-Mel input features from input audio array
         batch["input_features"] = self.feature_extractor(
-            audio["array"], sampling_rate=audio["sampling_rate"]
+            audio["array"],
+            sampling_rate=audio["sampling_rate"],
         ).input_features[0]
 
-        # encode target text to label ids
         batch["labels"] = self.tokenizer(batch["sentence"]).input_ids
         return batch
 
