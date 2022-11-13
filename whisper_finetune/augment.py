@@ -19,19 +19,17 @@ class RandomTransform(audaugs.transforms.BaseTransform):
         self.random_gen = np.random.default_rng(seed)
 
 
-class RandomFunctional(RandomTransform):
+class ApplyRandArgs(RandomTransform):
     def __init__(
         self,
         transform: Callable,
-        sample: dict[str, Callable[[np.random.Generator], Any]],
         p: float = 1.0,
         seed: int = 0,
-        **kwargs: dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         super().__init__(p=p, seed=seed)
         self.transform = transform
         self.kwargs = kwargs
-        self.sample = sample
 
     def apply_transform(
         self,
@@ -39,11 +37,13 @@ class RandomFunctional(RandomTransform):
         sample_rate: int,
         metadata: list[dict[str, Any]] | None = None,
     ) -> tuple[np.ndarray, int]:
-        sampled_kwargs = {}
-        for key, sampling_fn in self.sample.items():
-            sampled_kwargs[key] = sampling_fn(self.random_gen)
-
-        return self.transform(audio, sample_rate, **sampled_kwargs, **self.kwargs, metadata=metadata)
+        kwargs = {}
+        for key, value in self.kwargs.items():
+            if callable(value):
+                kwargs[key] = value(self.random_gen)
+            else:
+                kwargs[key] = value
+        return self.transform(audio, sample_rate, **kwargs, metadata=metadata)
 
 
 class RandomCompose(audaugs.composition.BaseComposition):
@@ -75,91 +75,70 @@ class RandomCompose(audaugs.composition.BaseComposition):
 
 
 def my_augment_pipeline(
+    paths_noise_other: list[Path],
     paths_noise_songs: list[Path],
-    paths_noise_environmental: list[Path],
-    apply_num_transforms: Callable[[np.random.Generator], int] | None = None,
     seed: int = 0,
 ) -> audaugs.composition.BaseComposition:
 
-    if apply_num_transforms is None:
-        apply_num_transforms = lambda rng: rng.choice([1, 2, 3, 4, 5], p=[0.15, 0.25, 0.3, 0.2, 0.1])
-
     augmentations = [
-        RandomFunctional(
-            transform=audaugsF.change_volume,
-            sample=dict(
-                volume_db=lambda rng: rng.uniform(-5, 10),
-            ),
+        ApplyRandArgs(
+            audaugsF.change_volume,
+            volume_db=lambda rng: rng.uniform(-5, 10),
         ),
-        RandomFunctional(
-            transform=audaugsF.tempo,
-            sample=dict(
-                factor=lambda rng: rng.uniform(0.8, 1.2),
-            ),
+        ApplyRandArgs(
+            audaugsF.tempo,
+            factor=lambda rng: rng.uniform(0.8, 1.2),
         ),
-        RandomFunctional(
-            transform=audaugsF.speed,
-            sample=dict(
-                factor=lambda rng: rng.uniform(0.9, 1.2),
-            ),
+        ApplyRandArgs(
+            audaugsF.speed,
+            factor=lambda rng: rng.uniform(0.9, 1.2),
         ),
-        RandomFunctional(
-            transform=audaugsF.pitch_shift,
-            sample=dict(
-                n_steps=lambda rng: rng.uniform(-2, 6),
-            ),
+        ApplyRandArgs(
+            audaugsF.pitch_shift,
+            n_steps=lambda rng: rng.uniform(-2, 6),
         ),
-        RandomFunctional(
-            transform=audaugsF.add_background_noise,
-            sample=dict(
-                snr_level_db=lambda rng: rng.triangular(3, 30, 30),
-            ),
+        ApplyRandArgs(
+            audaugsF.add_background_noise,
+            snr_level_db=lambda rng: rng.triangular(3, 30, 30),
         ),
-        RandomFunctional(
-            transform=audaugsF.add_background_noise,
-            sample=dict(
-                background_audio=lambda rng: str(rng.choice(paths_noise_environmental)),  # type: ignore
-                snr_level_db=lambda rng: rng.triangular(2, 10, 20),
-            ),
+        ApplyRandArgs(
+            audaugsF.add_background_noise,
+            background_audio=lambda rng: str(rng.choice(paths_noise_other)),
+            snr_level_db=lambda rng: rng.triangular(2, 10, 20),
         ),
-        RandomFunctional(
-            transform=audaugsF.add_background_noise,
-            sample=dict(
-                background_audio=lambda rng: str(rng.choice(paths_noise_songs)),  # type: ignore
-                snr_level_db=lambda rng: rng.triangular(2, 10, 20),
-            ),
+        ApplyRandArgs(
+            audaugsF.add_background_noise,
+            background_audio=lambda rng: str(rng.choice(paths_noise_songs)),
+            snr_level_db=lambda rng: rng.triangular(2, 10, 20),
         ),
-        RandomFunctional(
-            transform=audaugsF.reverb,
-            sample=dict(
-                reverberance=lambda rng: rng.triangular(0, 0, 40),
-                hf_damping=lambda rng: rng.triangular(0, 0, 40),
-                room_scale=lambda rng: rng.triangular(0, 0, 30),
-                pre_delay=lambda rng: rng.triangular(0, 0, 400),  # 500ms is maximum allowed value
-                wet_gain=lambda rng: rng.triangular(0, 0, 6),
-            ),
+        ApplyRandArgs(
+            audaugsF.reverb,
+            reverberance=lambda rng: rng.triangular(0, 0, 40),
+            hf_damping=lambda rng: rng.triangular(0, 0, 40),
+            room_scale=lambda rng: rng.triangular(0, 0, 30),
+            pre_delay=lambda rng: rng.triangular(0, 0, 400),  # 500ms is maximum allowed value
+            wet_gain=lambda rng: rng.triangular(0, 0, 6),
         ),
         audaugs.OneOf(
             [
-                RandomFunctional(
-                    transform=audaugsF.harmonic,
-                    sample=dict(
-                        kernel_size=lambda rng: int(rng.integers(5, 40)),
-                        power=lambda rng: rng.triangular(0, 0, 1.8),
-                        margin=lambda rng: rng.triangular(1, 1, 6),
-                    ),
+                ApplyRandArgs(
+                    audaugsF.harmonic,
+                    kernel_size=lambda rng: int(rng.integers(5, 40)),
+                    power=lambda rng: rng.triangular(0, 0, 1.8),
+                    margin=lambda rng: rng.triangular(1, 1, 6),
                 ),
-                RandomFunctional(
-                    transform=audaugsF.percussive,
-                    sample=dict(
-                        kernel_size=lambda rng: int(rng.integers(5, 40)),
-                        power=lambda rng: rng.triangular(0, 0, 3),
-                        margin=lambda rng: rng.triangular(1, 1, 4),
-                    ),
+                ApplyRandArgs(
+                    audaugsF.percussive,
+                    kernel_size=lambda rng: int(rng.integers(5, 40)),
+                    power=lambda rng: rng.triangular(0, 0, 3),
+                    margin=lambda rng: rng.triangular(1, 1, 4),
                 ),
             ]
         ),
     ]
+
+    weights = [0.1, 0.25, 0.3, 0.25, 0.1]
+    apply_num_transforms = lambda rng: rng.choice(len(weights), p=weights)
 
     return RandomCompose(
         transforms=augmentations,
@@ -170,9 +149,17 @@ def my_augment_pipeline(
 
 @dataclass
 class MyAugment:
-    transform: audaugs.composition.BaseComposition
+    augmentation_pipeline: audaugs.composition.BaseComposition
 
     def __call__(self, batch: dict[str, Any]) -> dict[str, Any]:
+        """
+        Modifies the batch in-place.
+        """
         for audio in batch["audio"]:
-            audio["array"], audio["sampling_rate"] = self.transform(audio["array"], audio["sampling_rate"])
+            array = audio["array"]
+            orig_rate = audio["sampling_rate"]
+            array, augmented_rate = self.augmentation_pipeline(array, orig_rate)
+            array, augmented_rate = audaugsF.to_mono(array, augmented_rate)
+            audio["array"] = array.astype(array.dtype)
+            audio["sampling_rate"] = augmented_rate
         return batch

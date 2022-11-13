@@ -7,11 +7,11 @@ from transformers import WhisperTokenizer
 from transformers.trainer import PredictionOutput
 
 
-class StringMetrics:
+class MyStringMetrics:
     def __init__(
         self,
         tokenizer: WhisperTokenizer,
-        metrics: list[str] = ["wer", "cer"],
+        metrics: list[str] = ["wer", "cer", "exact_match"],
     ) -> None:
         self.tokenizer = tokenizer
         self.metrics = {name: evaluate.load(name) for name in metrics}

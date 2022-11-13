@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
+import augly.audio.functional as audaugsF
 import datasets
 import numpy as np
 import torch
@@ -39,17 +40,27 @@ def skrink_splits(
 class Preprocessor:
     tokenizer: WhisperTokenizer
     feature_extractor: WhisperFeatureExtractor
+    augment_fn: Callable | None = None
+    process: bool = True
 
     def __call__(self, batch: dict[str, Any]) -> dict[str, torch.Tensor]:
-        audio = batch["audio"]
+        for audio in batch["audio"]:
+            array = audio["array"]
+            rate = audio["sampling_rate"]
+            array, rate = audaugsF.to_mono(array, rate)
+            audio["array"], audio["sampling_rate"] = array, rate
 
-        # compute log-Mel input features from input audio array
-        batch["input_features"] = self.feature_extractor(
-            audio["array"],
-            sampling_rate=audio["sampling_rate"],
-        ).input_features[0]
+        if self.augment_fn is not None:
+            # modifies in-place
+            self.augment_fn(batch)
 
-        batch["labels"] = self.tokenizer(batch["sentence"]).input_ids
+        batch_size = len(batch["audio"])
+        if self.process:
+            batch["input_features"] = [None] * batch_size
+            for i in range(batch_size):
+                array = batch["audio"][i]["array"]
+                batch["input_features"][i] = self.feature_extractor(array, sampling_rate=rate).input_features[0]
+            batch["labels"] = self.tokenizer(batch["transcription"]).input_ids
         return batch
 
 
