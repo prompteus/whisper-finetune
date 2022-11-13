@@ -69,8 +69,8 @@ Here are the scripts I use for preparing augmentation data
 ```
 mkdir -p ./data
 
-wget -O data/FMA-small.zip https://os.unil.cloud.switch.ch/fma/fma_small.zip 
-unzip data/FMA-small.zip -d data/
+wget -O ./data/FMA-small.zip https://os.unil.cloud.switch.ch/fma/fma_small.zip 
+unzip ./data/FMA-small.zip -d ./data/
 ```
 
 ### Environment noise
@@ -79,11 +79,11 @@ unzip data/FMA-small.zip -d data/
 The dataset is not large, but balanced.
 
 ```
-wget -O data/esc_50.zip https://github.com/karoldvl/ESC-50/archive/master.zip
-unzip data/esc_50.zip -d data/
-mv data/ESC-50-master/audio data/ESC-50
-rm -r data/ESC-50-master
-rm data/esc_50.zip
+wget -O ./data/esc_50.zip https://github.com/karoldvl/ESC-50/archive/master.zip
+unzip ./data/esc_50.zip -d ./data/
+mv ./data/ESC-50-master/audio ./data/ESC-50
+rm -r ./data/ESC-50-master
+rm ./data/esc_50.zip
 ```
 
 [ESC-US](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/YDEPUT), larger and more diverse dataset of noises, but it is not guaranteed to be balanced (or representative). Unfortunatelly, it needs to be downloaded manualy (because of license agreement). 2 parts of it should be enough. More than that would defeat the purpose of downloading the smaller balanced ESC-50 anyways.
@@ -91,8 +91,8 @@ rm data/esc_50.zip
 Download the parts manually from the website, place them in the data folder and run:
 ```
 mkdir -p ./data/ESC
-find data/ -name ESC-US-*.tar.gz -print0 | parallel -0 tar -xvzf {} -C data/ESC/ESC-US
-find data/ -name ESC-US-*.tar.gz -print0 | parallel -0 rm {}
+find ./data/ -name ESC-US-*.tar.gz -print0 | parallel -0 tar -xvzf {} -C ./data/ESC/ESC-US
+find ./data/ -name ESC-US-*.tar.gz -print0 | parallel -0 rm {}
 ```
 
 ### Check augmentations file tree
