@@ -42,6 +42,19 @@ they get truncated, but the transcription is not (because where should it be cut
 As a result, the model would be trained to hallucinate words not spoken in the audio.**
 
 
+## Downloading Mozilla Common Voice dataset
+In case you don't want to use your own dataset, you can use Mozilla Common Voice.
+The package comes with a cli command to download it into an expected format.
+
+```
+whisper-finetune download-common-voice \
+    --dataset-dir ./data/common_voice \
+    --cache-dir ./data \
+    --lang cs \
+    --shrink-test-split 4000 \
+    --shrink-valid-split 2000 \
+```
+
 
 ## Augmentation Preparation
 TODO
