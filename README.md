@@ -76,6 +76,8 @@ unzip data/FMA-small.zip -d data/
 ### Environment noise
 [ESC-50](https://github.com/karolpiczak/ESC-50), dataset for classification of environment noise.
 (50 types divided into categories: animals, natural soundscapes, human non-speech, domestic sounds,	urban noises)
+The dataset is not large, but balanced.
+
 ```
 wget -O data/esc_50.zip https://github.com/karoldvl/ESC-50/archive/master.zip
 unzip data/esc_50.zip -d data/
@@ -84,9 +86,9 @@ rm -r data/ESC-50-master
 rm data/esc_50.zip
 ```
 
-[ESC-US](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/YDEPUT), larger and more diverse dataset of noises.
-Unfortunatelly, it needs to be downloaded manualy (because of license agreement). It is large and 2 parts of it should be enough.
-Download the parts, place them in the data folder and run:
+[ESC-US](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/YDEPUT), larger and more diverse dataset of noises, but it is not guaranteed to be balanced (or representative). Unfortunatelly, it needs to be downloaded manualy (because of license agreement). 2 parts of it should be enough. More than that would defeat the purpose of downloading the smaller balanced ESC-50 anyways.
+
+Download the parts manually from the website, place them in the data folder and run:
 ```
 mkdir -p ./data/ESC
 find data/ -name ESC-US-*.tar.gz -print0 | parallel -0 tar -xvzf {} -C data/ESC/ESC-US
