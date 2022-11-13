@@ -1,7 +1,7 @@
 /.venv/
 /secrets/
 /data/
-*/wandb/
+**/wandb/
 /models/
 **/__pycache__/
 /.mypy_cache/
