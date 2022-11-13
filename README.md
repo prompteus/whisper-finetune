@@ -34,11 +34,13 @@ Metadata must contain at least two fields:
 - `transcription` - the ground truth transcription
 
 The name of the transcription column can differ, but in that case, must be passed to the training script as:
+
 ```whisper-finetune train ... --transcript-col-name=<your_column_name>```
 
-:warning: All files are expected to be shorter than 30s. If they are not,
+:warning: &nbsp; **All files are expected to be shorter than 30s. If they are not,
 they get truncated, but the transcription is not (because where should it be cut?)
-As a result, the model would be trained to hallucinate words not spoken in the audio.
+As a result, the model would be trained to hallucinate words not spoken in the audio.**
+
 
 
 ## Augmentation Preparation
