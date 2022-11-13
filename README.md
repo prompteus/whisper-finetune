@@ -57,7 +57,58 @@ whisper-finetune download-common-voice \
 
 
 ## Augmentation Preparation
-TODO
+`whisper-finetune` comes with a prepared audio augmentation pipeline.
+
+It consists of several audio effects provided by [https://github.com/facebookresearch/AugLy](augly) library.
+It also adds songs/environmental noise to the audio. Unfortunately, the audio files need to be partly downloaded manually.
+Here are the scripts I use for preparing augmentation data
+
+### Songs
+[FMA small](https://github.com/mdeff/fma), 8000 tracks of 30s, 8 balanced genres
+
+```
+mkdir -p ./data
+
+wget -O data/FMA-small.zip https://os.unil.cloud.switch.ch/fma/fma_small.zip 
+unzip data/FMA-small.zip -d data/
+```
+
+### Environment noise
+[ESC-50](https://github.com/karolpiczak/ESC-50), dataset for classification of environment noise.
+(50 types divided into categories: animals, natural soundscapes, human non-speech, domestic sounds,	urban noises)
+```
+wget -O data/esc_50.zip https://github.com/karoldvl/ESC-50/archive/master.zip
+unzip data/esc_50.zip -d data/
+mv data/ESC-50-master/audio data/ESC-50
+rm -r data/ESC-50-master
+rm data/esc_50.zip
+```
+
+[ESC-US](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/YDEPUT), larger and more diverse dataset of noises.
+Unfortunatelly, it needs to be downloaded manualy (because of license agreement). It is large and 2 parts of it should be enough.
+Download the parts, place them in the data folder and run:
+```
+mkdir -p ./data/ESC
+find data/ -name ESC-US-*.tar.gz -print0 | parallel -0 tar -xvzf {} -C data/ESC/ESC-US
+find data/ -name ESC-US-*.tar.gz -print0 | parallel -0 rm {}
+```
+
+### Check augmentations file tree
+
+Now, your data folder should look like this:
+
+```
+data
+|-- ESC
+|   |-- ESC-50
+|   `-- ESC-US
+|-- FMA-small
+...
+```
+
+Some of these contain subdirectories, but it does not matter, the training script will find the audio files recursively.
+
+
 
 ## Training
 TODO
