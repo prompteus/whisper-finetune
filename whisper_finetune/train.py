@@ -35,6 +35,7 @@ def train_model(
     should_early_stop: bool,
     early_stopping_patience: int | None,
     transcript_col_name: str,
+    seed: int,
 ) -> None:
 
     feature_extractor = WhisperFeatureExtractor.from_pretrained(
@@ -65,7 +66,7 @@ def train_model(
         my_augment_pipeline(
             paths_noise_other=paths_noise_other,
             paths_noise_songs=paths_noise_songs,
-            seed=42,
+            seed=seed,
         )
     )
 

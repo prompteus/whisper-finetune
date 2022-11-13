@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import warnings
 from pathlib import Path
 from typing import Optional
@@ -9,6 +10,7 @@ import typer
 from transformers import Seq2SeqTrainingArguments
 from transformers.hf_argparser import HfArgumentParser
 
+from whisper_finetune.preprocess import save_common_voice_to_files
 from whisper_finetune.train import train_model
 from whisper_finetune.utils import ModelSize
 
@@ -26,16 +28,35 @@ DEFAULT_TRAINING_ARGS = dict(
 
 @app.command()
 def download_common_voice(
+    dataset_dir: Path = typer.Option(..., file_okay=False, dir_okay=True, readable=True),
+    cache_dir: Path = typer.Option(..., file_okay=False, dir_okay=True, readable=True),
+    overwrite_if_exists: bool = typer.Option(False),
+    lang: str = typer.Option(...),
+    hf_dataset_name: str = typer.Option("mozilla-foundation/common_voice_11_0"),
+    shrink_test_split: Optional[int] = typer.Option(None),
+    shrink_valid_split: Optional[int] = typer.Option(None),
     seed: int = 0,
 ) -> None:
-    ...
+    dataset_dir = dataset_dir / lang
+    if dataset_dir.exists():
+        if overwrite_if_exists:
+            typer.echo(f"Overwriting existing dataset at {dataset_dir}")
+            shutil.rmtree(dataset_dir)
+        else:
+            typer.echo(f"Dataset already exists at {dataset_dir}")
+            return
 
+    dataset = datasets.load_dataset(hf_dataset_name, lang, use_auth_token=True, cache_dir=cache_dir)
 
-@app.command()
-def prepare_data(
-    seed: int = 0,
-) -> None:
-    ...
+    save_common_voice_to_files(
+        dataset,
+        dataset_dir,
+        shrink_test_split=shrink_test_split,
+        shrink_valid_split=shrink_valid_split,
+        seed=seed,
+    )
+
+    print(f"All files and metadata copied to {dataset_dir}.")
 
 
 @app.command(
@@ -59,6 +80,7 @@ def train(
     lang_long: str = typer.Option(...),
     model_size: ModelSize = typer.Option(...),
     transcript_col_name: str = typer.Option("transcription"),
+    seed: int = typer.Option(0),
 ) -> None:
 
     for subset in ("train", "validation", "test"):
@@ -105,7 +127,10 @@ def train(
         should_early_stop=should_early_stop,
         early_stopping_patience=early_stopping_patience,
         transcript_col_name=transcript_col_name,
+        seed=seed,
     )
+
+    print("Model trained.")
 
 
 def main() -> None:

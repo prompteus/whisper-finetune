@@ -1,24 +1,31 @@
 from __future__ import annotations
 
+import os
+import shutil
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 import augly.audio.functional as audaugsF
 import datasets
 import numpy as np
 import torch
+from _collections_abc import Mapping
+from tqdm import tqdm
 from transformers import WhisperFeatureExtractor, WhisperTokenizer
 
 
-def skrink_splits(
+def shrink_splits(
     ds: datasets.DatasetDict,
-    split_sizes: dict[str, int],
+    split_sizes: dict[str, int | None],
     grow_split: str = "train",
     seed: int = 0,
 ) -> datasets.DatasetDict:
     """
     Shrink splits to a given size.
     Moves the ommited examples to 'grow_split' split.
+
+    None values in split_sizes are ignored and the split is not modified.
     """
 
     rng = np.random.default_rng(seed)
@@ -26,7 +33,7 @@ def skrink_splits(
     moved = []
 
     for split, size in split_sizes.items():
-        if len(ds[split]) > size:
+        if size is not None and len(ds[split]) > size:
             idx_remaining = rng.choice(len(ds[split]), size, replace=False)
             idx_move = np.setdiff1d(np.arange(len(ds[split])), idx_remaining)
             dataset[split] = ds[split].select(idx_remaining)
@@ -94,3 +101,46 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         batch["labels"] = labels
 
         return batch
+
+
+def save_common_voice_to_files(
+    dataset: datasets.DatasetDict,
+    dataset_dir: Path,
+    shrink_test_split: int | None,
+    shrink_valid_split: int | None,
+    seed: int,
+) -> None:
+    del dataset["other"]
+    del dataset["invalidated"]
+    assert set(dataset.keys()) == {"train", "test", "validation"}
+
+    dataset = shrink_splits(
+        dataset,
+        {
+            "test": shrink_test_split,
+            "validation": shrink_valid_split,
+        },
+        grow_split="train",
+        seed=seed,
+    )
+
+    os.makedirs(dataset_dir, exist_ok=True)
+
+    for split, data in dataset.items():
+        os.makedirs(dataset_dir / split)
+        for path in tqdm(data["path"], desc=f"Copying {split} audio files"):
+            shutil.copy2(path, dataset_dir / split)
+
+    def extract_name(example: Mapping) -> Mapping:
+        example["file_name"] = Path(example["file_name"]).name
+        return example
+
+    dataset = (
+        dataset.remove_columns(["audio"])
+        .rename_columns({"sentence": "transcription", "path": "file_name"})
+        .map(extract_name)
+    )
+
+    for split, ds in dataset.items():
+        meta_path = dataset_dir / split / f"metadata.jsonl"
+        ds.to_json(meta_path, orient="records", lines=True, force_ascii=False)
