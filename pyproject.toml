@@ -37,6 +37,8 @@ torchaudio = "^0.13.0"
 wandb = "^0.13.5"
 augly = {extras = ["audio"], version = "^1.0.0"}
 typer = "^0.7.0"
+pandas = "^1.5.1"
+tqdm = "^4.64.1"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.17.0"
