@@ -72,7 +72,7 @@ def train(
     noise_songs_dir: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, readable=True),
     noise_other_dir: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, readable=True),
     cache_dir_models: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, writable=True),
-    should_early_stop: bool = typer.Option(True),
+    should_early_stop: bool = typer.Option(False),
     early_stopping_patience: Optional[int] = typer.Option(None),
     wandb_project: Optional[str] = typer.Option(None),
     lang: str = typer.Option(...),
