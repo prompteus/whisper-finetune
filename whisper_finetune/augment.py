@@ -54,10 +54,12 @@ class RandomCompose(audaugs.composition.BaseComposition):
         apply_num_transforms: Callable[[np.random.Generator], int],
         p: float = 1.0,
         seed: int = 0,
+        raise_on_augment_failure: bool = False,
     ) -> None:
         super().__init__(transforms, p)
         self.order_rng = np.random.default_rng(seed)
         self.apply_num_transforms = apply_num_transforms
+        self.raise_on_augment_failure = raise_on_augment_failure
 
     def __call__(
         self,
@@ -74,6 +76,8 @@ class RandomCompose(audaugs.composition.BaseComposition):
             try:
                 audio, sample_rate = transform(audio, sample_rate, metadata)
             except Exception as e:
+                if self.raise_on_augment_failure:
+                    raise e
                 logging.warning(f"Failed to apply transform {transform}: {e}")
         return audio, sample_rate
 
