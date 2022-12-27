@@ -21,7 +21,6 @@ DEFAULT_TRAINING_ARGS = dict(
     greater_is_better=False,
     predict_with_generate=True,
     generation_max_length=225,
-    evaluation_strategy="steps",
     report_to="wandb",
 )
 
@@ -96,7 +95,18 @@ def train(
     assert isinstance(dataset, datasets.DatasetDict)
 
     training_args_parser = HfArgumentParser(Seq2SeqTrainingArguments)
-    training_args = training_args_parser.parse_args_into_dataclasses(ctx.args, return_remaining_strings=True)[0]
+    training_args, remaining_args = training_args_parser.parse_args_into_dataclasses(
+        ctx.args, return_remaining_strings=True
+    )
+
+    print("TRAINING ARGS: ")
+    print(training_args)
+    print("\n\n")
+
+    print("REMAINING ARGS:")
+    print(remaining_args)
+    print("\n\n")
+
     assert isinstance(training_args, Seq2SeqTrainingArguments)
 
     if wandb_project is None:
