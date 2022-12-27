@@ -80,7 +80,8 @@ def train_model(
     model.config.suppress_tokens = []
 
     dataset = dataset.cast_column("audio", audio_feature)
-    dataset = dataset.rename_column(transcript_col_name, "transcription")
+    if transcript_col_name != "transcription":
+        dataset = dataset.rename_column(transcript_col_name, "transcription")
     dataset["train"].set_transform(preprocess_train)
     dataset["validation"].set_transform(preprocess_eval)
     dataset["test"].set_transform(preprocess_eval)
@@ -108,7 +109,6 @@ def train_model(
         training_args.load_best_model_at_end = True
         callbacks.append(early_stopping)
 
-    training_args.per_device_train_batch_size = 2
     training_args.remove_unused_columns = False
 
     metrics = MyStringMetrics(tokenizer)
