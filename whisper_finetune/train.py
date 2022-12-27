@@ -25,13 +25,13 @@ def train_model(
     dataset_name: str,
     dataset: datasets.DatasetDict,
     training_args: Seq2SeqTrainingArguments,
+    wandb_run: wandb.wandb_sdk.wandb_run.Run,
     noise_songs_dir: Path,
     noise_other_dir: Path,
     cache_dir_models: Path,
     lang: str,
     lang_long: str,
     model_size: ModelSize,
-    wandb_project_name: str,
     should_early_stop: bool,
     early_stopping_patience: int | None,
     transcript_col_name: str,
@@ -86,11 +86,8 @@ def train_model(
     dataset["validation"].set_transform(preprocess_eval)
     dataset["test"].set_transform(preprocess_eval)
 
-    wandb_run = wandb.init(
-        project=wandb_project_name,
-        tags=[lang, model_size.value, dataset_name],
-    )
     assert wandb_run is not None
+    wandb_run.tags = wandb_run.tags + (lang, model_size.value, dataset_name)
 
     wandb_run.config.update(
         {
@@ -124,4 +121,7 @@ def train_model(
         callbacks=callbacks,
     )
 
+    trainer.evaluate(dataset["validation"])
     trainer.train()
+
+    trainer.save_model(trainer.args.output_dir / "final")

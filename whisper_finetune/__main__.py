@@ -7,9 +7,10 @@ from typing import Optional
 
 import datasets
 import typer
-from transformers import Seq2SeqTrainingArguments
+from transformers import Seq2SeqTrainingArguments, TrainingArguments
 from transformers.hf_argparser import HfArgumentParser
 
+import wandb
 from whisper_finetune.preprocess import save_common_voice_to_files
 from whisper_finetune.train import train_model
 from whisper_finetune.utils import ModelSize
@@ -72,6 +73,7 @@ def train(
     noise_songs_dir: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, readable=True),
     noise_other_dir: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, readable=True),
     cache_dir_models: Path = typer.Option(..., exists=True, file_okay=False, dir_okay=True, writable=True),
+    output_root_dir: Optional[Path] = typer.Option(None, file_okay=False, dir_okay=True, writable=True),
     should_early_stop: bool = typer.Option(False),
     early_stopping_patience: Optional[int] = typer.Option(None),
     wandb_project: Optional[str] = typer.Option(None),
@@ -91,6 +93,28 @@ def train(
         if arg not in ctx.args:
             ctx.args.extend([f"--{arg}", str(value)])
 
+    if model_name_pretrained is None:
+        model_name_pretrained = f"openai/whisper-{model_size.value}"
+    model_name_finetuned = f"{model_name_pretrained.split('/')[-1]}-{lang}--{dataset_name}"
+
+    if "--output_dir" in ctx.args and output_root_dir is not None:
+        raise ValueError(
+            "Cannot specify both --output_dir and --output-root-dir. --output-root-dir uses automatic naming."
+        )
+
+    if "--output_dir" not in ctx.args and output_root_dir is None:
+        raise ValueError(
+            "Must specify either --output_dir or --output-root-dir. --output-root-dir uses automatic naming."
+        )
+
+    if wandb_project is None:
+        wandb_project = f"whisper-{lang}"
+    wandb_run = wandb.init(project=wandb_project)
+
+    if output_root_dir is not None:
+        output_dir = str(output_root_dir / model_name_finetuned / wandb_run.name)
+        ctx.args.extend([f"--output_dir", output_dir])
+
     dataset = datasets.load_dataset("audiofolder", data_dir=str(dataset_dir))
     assert isinstance(dataset, datasets.DatasetDict)
 
@@ -99,6 +123,9 @@ def train(
         ctx.args, return_remaining_strings=True
     )
 
+    assert isinstance(training_args, Seq2SeqTrainingArguments)
+    assert isinstance(training_args, TrainingArguments)
+
     print("TRAINING ARGS: ")
     print(training_args)
     print("\n\n")
@@ -106,15 +133,6 @@ def train(
     print("REMAINING ARGS:")
     print(remaining_args)
     print("\n\n")
-
-    assert isinstance(training_args, Seq2SeqTrainingArguments)
-
-    if wandb_project is None:
-        wandb_project = f"whisper-{lang}"
-
-    if model_name_pretrained is None:
-        model_name_pretrained = f"openai/whisper-{model_size.value}"
-    model_name_finetuned = f"{model_name_pretrained.split('/')[-1]}-{lang}-{dataset_name}"
 
     if should_early_stop and early_stopping_patience is None:
         raise ValueError("early_stopping_patience must be set if should_early_stop is True")
@@ -126,6 +144,7 @@ def train(
         model_name_finetuned=model_name_finetuned,
         dataset_name=dataset_name,
         dataset=dataset,
+        wandb_run=wandb_run,
         training_args=training_args,
         noise_songs_dir=noise_songs_dir,
         noise_other_dir=noise_other_dir,
@@ -133,7 +152,6 @@ def train(
         lang=lang,
         lang_long=lang_long,
         model_size=model_size,
-        wandb_project_name=wandb_project,
         should_early_stop=should_early_stop,
         early_stopping_patience=early_stopping_patience,
         transcript_col_name=transcript_col_name,
