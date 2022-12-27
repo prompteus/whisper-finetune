@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -70,7 +71,10 @@ class RandomCompose(audaugs.composition.BaseComposition):
         transforms = transforms[:max_transforms]
 
         for transform in transforms:
-            audio, sample_rate = transform(audio, sample_rate, metadata)
+            try:
+                audio, sample_rate = transform(audio, sample_rate, metadata)
+            except Exception as e:
+                logging.warning(f"Failed to apply transform {transform}: {e}")
         return audio, sample_rate
 
 
