@@ -7,6 +7,7 @@ from typing import Any, Callable
 
 import augly.audio as audaugs
 import augly.audio.functional as audaugsF
+import librosa
 import numpy as np
 
 
@@ -158,6 +159,7 @@ def my_augment_pipeline(
 @dataclass
 class MyAugment:
     augmentation_pipeline: audaugs.composition.BaseComposition
+    raise_on_augment_failure: bool = False
 
     def __call__(self, batch: dict[str, Any]) -> dict[str, Any]:
         """
@@ -165,9 +167,15 @@ class MyAugment:
         """
         for audio in batch["audio"]:
             array = audio["array"]
-            orig_rate = audio["sampling_rate"]
-            array, augmented_rate = self.augmentation_pipeline(array, orig_rate)
-            array, augmented_rate = audaugsF.to_mono(array, augmented_rate)
+            rate = audio["sampling_rate"]
+            try:
+                array, rate = self.augmentation_pipeline(array, rate)
+                array, rate = audaugsF.to_mono(array, rate)
+            except Exception as e:
+                if self.raise_on_augment_failure:
+                    raise e
+                logging.warning(f"Failed to apply augmentation: {e}")
+                continue
             audio["array"] = array.astype(array.dtype)
-            audio["sampling_rate"] = augmented_rate
+            audio["sampling_rate"] = rate
         return batch
