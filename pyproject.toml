@@ -47,6 +47,11 @@ isort = "^5.10.1"
 mypy = "^0.990"
 flake8 = "^5.0.4"
 ipywidgets = ">=7.0,<8.0"
+awscli = "^1.27.38"
+skypilot = {extras = ["aws", "azure", "gcp"], version = "^0.2.1"}
+google-api-python-client = "^2.70.0"
+# because otherwise poetry would not resolve. it is a dependency of skypilot
+ray = ">=1.13.0"
 
 [build-system]
 requires = ["poetry-core"]
