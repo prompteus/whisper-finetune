@@ -3,9 +3,16 @@
 This project is made for easy finetuning (training) of Whisper speech-to-text models.
 
 ## Installation
-TODO
+
+1) Clone the project.
+1) Install system dependencies, notably `libmagic-dev` and `ffmpeg`. Or you can just use the development docker image in `docker/dev/Dockerfile` which contains everything you may need.
+1) Run `poetry install` or install the project locally using pip (but the dev docker comes with poetry)
+
+If you happen to use VS Code (and Dev Containers extension), it should open the project in the dev docker. For more info, see [VS Code documentation](https://code.visualstudio.com/docs/devcontainers/containers).
+
 
 ## Dataset Preparation
+
 The dataset is expected have the following structure:
 ```
 <dataset_root>
@@ -43,6 +50,7 @@ As a result, the model would be trained to hallucinate words not spoken in the a
 
 
 ## Downloading Mozilla Common Voice dataset
+
 In case you don't want to use your own dataset, you can use Mozilla Common Voice.
 The package comes with a cli command to download it into an expected format.
 
@@ -57,6 +65,7 @@ whisper-finetune download-common-voice \
 
 
 ## Augmentation Preparation
+
 `whisper-finetune` comes with a prepared audio augmentation pipeline.
 
 It consists of several audio effects provided by [https://github.com/facebookresearch/AugLy](augly) library.
@@ -64,6 +73,7 @@ It also adds songs/environmental noise to the audio. Unfortunately, the audio fi
 Here are the scripts I use for preparing augmentation data
 
 ### Songs
+
 [FMA small](https://github.com/mdeff/fma), 8000 tracks of 30s, 8 balanced genres
 
 ```
@@ -74,6 +84,7 @@ unzip ./data/FMA-small.zip -d ./data/
 ```
 
 ### Environment noise
+
 [ESC-50](https://github.com/karolpiczak/ESC-50), dataset for classification of environment noise.
 (50 types divided into categories: animals, natural soundscapes, human non-speech, domestic sounds,	urban noises)
 The dataset is not large, but balanced.
@@ -116,6 +127,7 @@ Some of these contain subdirectories, but it does not matter, the training scrip
 
 For training, use `whisper-finetune train`. Example usage:
 
+```
 whisper-finetune train \
     --dataset-dir ./data/common_voice/cs \
     --dataset-name common-voice-cs \
@@ -135,10 +147,11 @@ whisper-finetune train \
     --num_train_epochs 15 \
     --logging_steps 20 \
     --bf16
+```
 
 You may have noticed that some parameter names contain '-' and others '_' as a word separator.
-Parameters containing '-' are "own" to the projects training script, the rematining are passed
-to the standard `Seq2SeqTrainingArguments` object from HuggingFace transformers.
+Parameters containing '-' are "own" to the project's training script, the remaining are passed
+to the `Seq2SeqTrainingArguments` object from HuggingFace transformers.
 See the [transformers documentation](https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Seq2SeqTrainingArguments)
 to learn more about the parameters.
 
@@ -151,4 +164,5 @@ The script will automatically log to Weights and Biases:
 
 
 ## Evaluation
+
 TODO
