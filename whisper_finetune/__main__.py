@@ -77,6 +77,9 @@ def train(
     should_early_stop: bool = typer.Option(False),
     early_stopping_patience: Optional[int] = typer.Option(None),
     wandb_project: Optional[str] = typer.Option(None),
+    wandb_run_name: Optional[str] = typer.Option(None),
+    wandb_run_id: Optional[str] = typer.Option(None),
+    wandb_resume: Optional[str] = typer.Option(None),
     lang: str = typer.Option(...),
     lang_long: str = typer.Option(...),
     model_size: ModelSize = typer.Option(...),
@@ -109,7 +112,7 @@ def train(
 
     if wandb_project is None:
         wandb_project = f"whisper-{lang}"
-    wandb_run = wandb.init(project=wandb_project)
+    wandb_run = wandb.init(project=wandb_project, name=wandb_run_name, resume=wandb_resume, id=wandb_run_id)
 
     if output_root_dir is not None:
         output_dir = str(output_root_dir / model_name_finetuned / wandb_run.name)
