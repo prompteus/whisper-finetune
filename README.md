@@ -113,7 +113,42 @@ Some of these contain subdirectories, but it does not matter, the training scrip
 
 
 ## Training
-TODO
+
+For training, use `whisper-finetune train`. Example usage:
+
+whisper-finetune train \
+    --dataset-dir ./data/common_voice/cs \
+    --dataset-name common-voice-cs \
+    --noise-songs-dir ./data/FMA-small \
+    --noise-other-dir ./data/ESC \
+    --cache-dir-models ./models \
+    --lang cs \
+    --lang-long czech \
+    --model-size tiny \
+    --output-root-dir ./models \
+    --per_device_train_batch_size 16 \
+    --per_device_eval_batch_size 16 \
+    --eval_accumulation_steps 2 \
+    --warmup_steps 1000 \
+    --evaluation_strategy "steps" \
+    --eval_steps 100 \
+    --num_train_epochs 15 \
+    --logging_steps 20 \
+    --bf16
+
+You may have noticed that some parameter names contain '-' and others '_' as a word separator.
+Parameters containing '-' are "own" to the projects training script, the rematining are passed
+to the standard `Seq2SeqTrainingArguments` object from HuggingFace transformers.
+See the [transformers documentation](https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Seq2SeqTrainingArguments)
+to learn more about the parameters.
+
+The script will automatically log to Weights and Biases:
+- training loss
+- validation metrics:
+    - word error rate
+    - character error rate
+    - exact string match
+
 
 ## Evaluation
 TODO
